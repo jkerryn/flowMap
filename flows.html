@@ -55,7 +55,7 @@
   stroke: #000;
 }
 
-.county-arcs3 {
+.link {
   stroke: rgba(255,255,255,.5);
   fill: none;
   stroke: #000;
@@ -97,11 +97,7 @@ var path = d3.geo.path()
 var radius = d3.scale.sqrt() /* for scaling proportional symbols */
     .domain([0, 1e6])
     .range([0, 15]);
-
-/*var voronoi = d3.geom.voronoi()
-    .x(function(d) { return d.x; })
-    .y(function(d) { return d.y; })
-    .clipExtent([[0, 0], [width, height]]);*/
+	
 	
 var svg = d3.select("body").append("svg")
     .attr("width", width)
@@ -121,7 +117,7 @@ function ready(error, us, counties, flows) {
     countyById.set(d.GEOID, d);
     d.outgoing = [];
     d.incoming = [];
-	d.pop = d.pop
+	d.pop = d.pop /* population variable */
   });
 
   flows.forEach(function(flow) {
@@ -133,11 +129,7 @@ function ready(error, us, counties, flows) {
     	source.outgoing.push(link);
 		//console.log('te', flow);
     	target.incoming.push(link);
-		//filings = +flow.filings;
-		//console.log('te', filings);
-		//strength_scale = d3.scale.linear().range([20, 1000]) /* thickness range for flow lines */
-    		//.domain([0, d3.max(flow, magnitude) /*scale arrow size based on filings */
-    //]);
+	
   });
   
   
@@ -165,27 +157,25 @@ function ready(error, us, counties, flows) {
     }
   });
 
-  /*voronoi(counties)
-      .forEach(function(d) { d.point.cell = d; });*/
-
+ 
+//LAND from topoJSON
   svg.append("path")
       .datum(topojson.feature(us, us.objects.land))
       .attr("class", "states")
       .attr("d", path);
 
+//COUNTIES from topoJSON
   svg.append("path")
       .datum(topojson.mesh(us, us.objects.counties, function(a, b) { return a !== b; }))
       .attr("class", "county-borders")
       .attr("d", path);
 
+//STATES from topoJSON
   svg.append("path")
       .datum(topojson.mesh(us, us.objects.states, function(a, b) { return a !== b; }))
       .attr("class", "state-borders")
       .attr("d", path);
-	  
-
-	 
-	  
+	    
 
   var county = svg.append("g")
       .attr("class", "counties")
@@ -197,24 +187,28 @@ function ready(error, us, counties, flows) {
       .attr("class", "county-cell")
       .attr("d", function(d) { return d.cell.length ? "M" + d.cell.join("L") + "Z" : null; });*/
 	  
-	  
+//Proportional Circles on Map based on population (d.pop) 
  county.append("circle")
       .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
 	  .attr("class", "circle")
 	  .attr("id", "circle")
       .attr("r", function(d) { return radius(d.pop); })
-	  //console.log('here', county); 
 
+//Links between counties based on flows 
  county.append("g")
-      .attr("class", "county-arcs3")
+      .attr("class", "link")
     .selectAll("path")
       .data(function(d) { return d.outgoing; })
 	  .enter().append("path")
-	  //.attr("d", function(d) { return path({type: "LineString", coordinates: [d.source, d.target]})})
+	  .attr("d", function(d) { return path({type: "LineString", coordinates: [d.source, d.target]})})
       .style("stroke-width", function(d) { return strength_scale(d.magnitude); })
 	 .attr("d", function(d) {
         return drawCurve(d);
     });
+	 
+	 
+	 
+	 //function to replicated scaled lines and arrowheads
 	 
 	 function drawCurve(d) {
         var slope = Math.atan2((+d3.select('#circle' + d.target) - d3.select('#circle' + d.source)), (+d3.select('#circle' + d.target) - d3.select('#circle' + d.source)));
